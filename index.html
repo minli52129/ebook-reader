@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电子书阅读器</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; flex-direction: column; }
+        .header { background: #2c3e50; color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 24px; font-weight: 500; }
+        .upload-btn { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .upload-btn:hover { background: #2980b9; }
+        #file-input { display: none; }
+        .reader-container { flex: 1; display: flex; position: relative; overflow: hidden; }
+        .nav-btn { position: absolute; top: 50%; transform: translateY(-50%); width: 60px; height: 80px; background: rgba(0,0,0,0.3); color: white; border: none; font-size: 30px; cursor: pointer; transition: background 0.3s; z-index: 10; }
+        .nav-btn:hover { background: rgba(0,0,0,0.5); }
+        .prev-btn { left: 20px; }
+        .next-btn { right: 20px; }
+        .content-area { flex: 1; padding: 40px 100px; font-size: 18px; line-height: 1.8; color: #333; overflow-y: auto; }
+        .welcome-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #666; }
+        .welcome-screen h2 { font-size: 28px; margin-bottom: 20px; font-weight: normal; }
+        .welcome-screen p { font-size: 16px; color: #888; }
+        .book-info { text-align: center; padding: 10px; color: #666; font-size: 14px; border-bottom: 1px solid #eee; }
+        .progress-bar { position: absolute; bottom: 0; left: 0; height: 3px; background: #3498db; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📖 电子书阅读器</h1>
+        <button class="upload-btn" onclick="document.getElementById('file-input').click()">选择 TXT 文件</button>
+        <input type="file" id="file-input" accept=".txt">
+    </div>
+    <div class="reader-container">
+        <button class="nav-btn prev-btn" onclick="prevPage()">‹</button>
+        <div class="content-area" id="content"></div>
+        <button class="nav-btn next-btn" onclick="nextPage()">›</button>
+        <div class="progress-bar" id="progress"></div>
+    </div>
+    <script>
+        const contentEl = document.getElementById('content');
+        const progressEl = document.getElementById('progress');
+        const fileInput = document.getElementById('file-input');
+        let pages = [];
+        let currentPage = 0;
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const text = evt.target.result;
+                    parseBook(text);
+                };
+                reader.readAsText(file, 'GBK');
+            }
+        });
+
+        function parseBook(text) {
+            const lines = text.split(/\r?\n/);
+            pages = [];
+            let currentPageText = '';
+            const charsPerPage = 800;
+
+            for (let line of lines) {
+                line = line.trim();
+                if (!line) continue;
+                if (currentPageText.length + line.length + 1 > charsPerPage) {
+                    if (currentPageText) pages.push(currentPageText);
+                    currentPageText = line;
+                } else {
+                    currentPageText += (currentPageText ? '\n' : '') + line;
+                }
+            }
+            if (currentPageText) pages.push(currentPageText);
+            
+            currentPage = 0;
+            renderPage();
+        }
+
+        function renderPage() {
+            if (pages.length === 0) {
+                contentEl.innerHTML = '<div class="welcome-screen"><h2>欢迎使用电子书阅读器</h2><p>点击上方按钮选择 TXT 文件开始阅读</p></div>';
+                progressEl.style.width = '0%';
+                return;
+            }
+            contentEl.textContent = pages[currentPage];
+            progressEl.style.width = ((currentPage + 1) / pages.length * 100) + '%';
+        }
+
+        function prevPage() {
+            if (currentPage > 0) { currentPage--; renderPage(); }
+        }
+
+        function nextPage() {
+            if (currentPage < pages.length - 1) { currentPage++; renderPage(); }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') prevPage();
+            if (e.key === 'ArrowRight') nextPage();
+        });
+
+        renderPage();
+    </script>
+</body>
+</html>
