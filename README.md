@@ -118,11 +118,25 @@ ESLint 10 系列声明支持 `^20.19.0 || ^22.13.0 || >=24`，本机 Node v23.11
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | M0 | 脚手架：Vite + TS + ESLint + Vitest + CI | ✅ 完成 |
-| M1 | TXT 端到端：编码探测 + 章节识别 + IndexedDB + 书架 | ⬜ |
+| M1 | TXT 端到端：编码探测 + 章节识别 + IndexedDB + 书架 | ✅ 完成 |
 | M2 | 排版引擎：懒分页 + 缓存 + 锚点 + 翻页/主题/设置 | ⬜ |
 | M3 | EPUB：解包 + OPF + nav + 净化 + 资源 | ⬜ |
 | M4 | 体验：搜索 + 书签/高亮/笔记 + 滚动模式 | ⬜ |
 | M5 | PWA 离线 + GitHub Pages 部署 | ⬜ |
+
+### M1 已交付
+
+- **编码探测**（`core/encoding`）：BOM 判定 → UTF-8 严格模式 → GB18030 回退，
+  修复旧实现硬编码导致的中文乱码
+- **章节识别**（`core/txt`）：逐行扫描 + 全行锚定，修复旧实现 `\s` 吞换行导致
+  标题吞掉正文首段的缺陷；strong 模式并集兼容「楔子 + 第N章 + 番外」混用目录
+- **IndexedDB 存储层**（`platform/db`）：books/chapters/progress/settings/marks
+  五表分离，进度微写入与书库解耦，级联删除保证原子性
+- **书架 + 最小阅读视图**：多文件导入、删除确认、按章阅读与进度记忆
+- **验收测试**：3 本 5MB TXT 并存导入约 1.4s（`tests/perf/`）
+
+已知边界（M2 处理）：阅读视图为按章滚动，无分页排版与章内精确位置恢复；
+仅支持 TXT；章节切分对文件内嵌目录行尚未特殊处理。
 
 M1 待办中包含一项质量升级：ESLint 规则集由 `recommended` 升级为
 `recommendedTypeChecked`，引入 `no-floating-promises` 等类型感知规则，
