@@ -1,17 +1,20 @@
-import type { BookMeta, Chapter } from '@/types/book';
+import type { BookMeta, Chapter, Mark } from '@/types/book';
 import type { Page, ReadingAnchor } from '@/types/reader';
 import type { ReaderSettings } from '@/types/settings';
 
 import { appStore } from '@/store/app-store';
 import { navigate } from '@/ui/router';
-import { SettingsPanel, fontFamilyCss } from '@/ui/components/settings-panel';
 
 import { PaginationCache, layoutKeyOf } from '@/core/pagination/cache';
 import { findPageByOffset, paginateChapter } from '@/core/pagination/paginator';
 import { clampAnchor, pageToAnchor, percentForAnchor } from '@/core/position/anchor';
+import { searchInChapters } from '@/core/search/searcher';
 
 import type { EbookDb } from '@/platform/db/repository';
 import { DomMeasurer } from '@/platform/measurer/dom-measurer';
+import { SettingsPanel, fontFamilyCss } from '@/ui/components/settings-panel';
+import { SearchPanel } from '@/ui/components/search-panel';
+import { TocPanel } from '@/ui/components/toc-panel';
 
 const SAVE_DEBOUNCE_MS = 500;
 const RESIZE_DEBOUNCE_MS = 300;
@@ -61,6 +64,9 @@ export class ReaderView {
   private restoredOffset = 0;
 
   private settingsPanel: SettingsPanel | null = null;
+  private searchPanel: SearchPanel | null = null;
+  private tocPanel: TocPanel | null = null;
+  private marks: Mark[] = [];
   private saveTimer: number | null = null;
   private resizeTimer: number | null = null;
   private resizeHandler: (() => void) | null = null;
@@ -83,6 +89,7 @@ export class ReaderView {
     await this.db.putBook({ ...book, lastReadAt: Date.now() });
 
     this.chapters = await this.db.getChapters(this.bookId);
+    this.marks = await this.db.getMarksByBook(this.bookId);
 
     const progress = await this.db.getProgress(this.bookId);
     const anchor: ReadingAnchor = progress
@@ -223,7 +230,12 @@ export class ReaderView {
         <header class="reader-header">
           <button class="btn-ghost" data-role="back">← 书架</button>
           <span class="reader-title">${escapeHtml(title)}</span>
-          <span class="reader-percent">${percent}%</span>
+          <span class="reader-tools">
+            <button class="btn-icon" data-role="toc" aria-label="目录">☰</button>
+            <button class="btn-icon" data-role="search" aria-label="搜索">🔍</button>
+            <button class="btn-icon" data-role="bookmark" aria-label="添加书签">🔖</button>
+            <span class="reader-percent">${percent}%</span>
+          </span>
         </header>
 
         ${
@@ -255,6 +267,7 @@ export class ReaderView {
 
         <button class="float-settings" data-role="settings" aria-label="阅读设置">⚙</button>
         <div class="panel-root" data-role="panel-root" hidden></div>
+        <div class="panel-root" data-role="panel-root-2" hidden></div>
       </div>
     `;
 
@@ -378,7 +391,91 @@ export class ReaderView {
     }
   }
 
-  // ---------- 设置 ----------
+  // ---------- 搜索 / 目录 / 书签 ----------
+
+  private openSearch(): void {
+    const root = this.root.querySelector<HTMLElement>('[data-role="panel-root-2"]');
+    if (root === null) return;
+    root.hidden = false;
+    this.searchPanel = new SearchPanel(
+      root,
+      {
+        onClose: () => {
+          root.hidden = true;
+          this.searchPanel = null;
+        },
+        onJump: (chapterIdx, offset) => {
+          root.hidden = true;
+          this.searchPanel = null;
+          this.jumpTo(chapterIdx, offset);
+        },
+      },
+      searchInChapters,
+    );
+    this.searchPanel.setChapters(this.chapters);
+  }
+
+  private openToc(): void {
+    const root = this.root.querySelector<HTMLElement>('[data-role="panel-root-2"]');
+    if (root === null) return;
+    root.hidden = false;
+    this.tocPanel = new TocPanel(
+      root,
+      {
+        onClose: () => {
+          root.hidden = true;
+          this.tocPanel = null;
+        },
+        onJump: (chapterIdx, offset) => {
+          root.hidden = true;
+          this.tocPanel = null;
+          this.jumpTo(chapterIdx, offset);
+        },
+      },
+    );
+    this.tocPanel.setData(this.chapters, this.book?.toc, this.marks);
+  }
+
+  /** 跳转到指定章节+偏移（分页模式恢复页，滚动模式切章） */
+  private jumpTo(chapterIdx: number, offset: number): void {
+    this.chapterIdx = clampAnchor(this.chapters, { chapterIdx, offsetInChapter: 0 }).chapterIdx;
+    if (this.settings.mode === 'paged') {
+      this.paginateCurrent(offset);
+    } else {
+      this.renderScrollContent();
+    }
+  }
+
+  private async toggleBookmark(): Promise<void> {
+    const anchor: ReadingAnchor =
+      this.settings.mode === 'paged' && this.pages[this.pageIdx] !== undefined
+        ? pageToAnchor(this.pages[this.pageIdx])
+        : { chapterIdx: this.chapterIdx, offsetInChapter: 0 };
+
+    // 同位置已存在书签则删除（切换），否则新增
+    const existing = this.marks.find(
+      (m) => m.type === 'bookmark' && m.anchor.chapterIdx === anchor.chapterIdx && m.anchor.offsetInChapter === anchor.offsetInChapter,
+    );
+    if (existing !== undefined) {
+      await this.db.deleteMark(existing.id);
+    } else {
+      const chapter = this.chapters[anchor.chapterIdx];
+      const preview =
+        chapter?.contentType === 'html'
+          ? chapter.content.replace(/<[^>]+>/g, '').slice(0, 60)
+          : chapter?.content.slice(0, 60) ?? '';
+      const mark: Mark = {
+        id: crypto.randomUUID(),
+        bookId: this.bookId,
+        type: 'bookmark',
+        anchor,
+        text: preview,
+        createdAt: Date.now(),
+      };
+      await this.db.putMark(mark);
+    }
+    this.marks = await this.db.getMarksByBook(this.bookId);
+  }
 
   private openSettings(): void {
     const panelRoot = this.root.querySelector<HTMLElement>('[data-role="panel-root"]');
@@ -470,6 +567,11 @@ export class ReaderView {
     });
     this.root.querySelector('[data-role="settings"]')?.addEventListener('click', () => {
       this.openSettings();
+    });
+    this.root.querySelector('[data-role="toc"]')?.addEventListener('click', () => this.openToc());
+    this.root.querySelector('[data-role="search"]')?.addEventListener('click', () => this.openSearch());
+    this.root.querySelector('[data-role="bookmark"]')?.addEventListener('click', () => {
+      void this.toggleBookmark();
     });
 
     const tapPrev = this.root.querySelector('[data-role="tap-prev"]');
