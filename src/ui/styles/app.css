@@ -144,7 +144,33 @@
 
 /* ============ 阅读视图 ============ */
 .reader-view {
-  background: var(--color-bg);
+  background: var(--rv-bg, #f5f5f5);
+  color: var(--rv-fg, #333333);
+}
+
+/* ---- 三主题（作用于 data-theme，与设置面板联锁） ---- */
+.reader-view[data-theme='light'] {
+  --rv-bg: #f5f5f5;
+  --rv-fg: #333333;
+  --rv-muted: #888888;
+  --rv-bar-bg: #2c3e50;
+  --rv-bar-fg: #ffffff;
+}
+
+.reader-view[data-theme='sepia'] {
+  --rv-bg: #f4e8d1;
+  --rv-fg: #5b4636;
+  --rv-muted: #9c8a72;
+  --rv-bar-bg: #a8926b;
+  --rv-bar-fg: #fdf6e3;
+}
+
+.reader-view[data-theme='night'] {
+  --rv-bg: #1a1a1a;
+  --rv-fg: #c8c8c8;
+  --rv-muted: #6f6f6f;
+  --rv-bar-bg: #101010;
+  --rv-bar-fg: #9a9a9a;
 }
 
 .reader-header,
@@ -154,19 +180,14 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 16px;
-  background: var(--color-header-bg);
-  color: var(--color-header-fg);
+  background: var(--rv-bar-bg);
+  color: var(--rv-bar-fg);
   position: sticky;
   z-index: 10;
 }
 
-.reader-header {
-  top: 0;
-}
-
-.reader-footer {
-  bottom: 0;
-}
+.reader-header { top: 0; }
+.reader-footer { bottom: 0; }
 
 .reader-title {
   font-size: 14px;
@@ -191,15 +212,64 @@
   cursor: pointer;
 }
 
-.btn-ghost:hover {
-  background: rgba(255, 255, 255, 0.12);
+.btn-ghost:hover { background: rgba(255, 255, 255, 0.12); }
+
+/* ---- 分页模式 ---- */
+.page-area {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+}
+
+.page-content {
+  width: 100%;
+  max-width: 720px;
+  overflow: hidden;
+  font-size: 18px;
+  line-height: 1.8;
+  text-align: justify;
+}
+
+.page-content p {
+  margin-bottom: 0.6em;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.page-content .empty-chapter {
+  text-align: center;
+  color: var(--rv-muted);
+}
+
+.tap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32%;
+  cursor: pointer;
+}
+
+.tap-zone[data-role='tap-prev'] { left: 0; }
+.tap-zone[data-role='tap-next'] { right: 0; }
+
+.page-indicator {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.85;
+}
+
+/* ---- 滚动模式 ---- */
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
 }
 
 .reader-article {
-  flex: 1;
   width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
   padding: 32px 24px 48px;
 }
 
@@ -216,12 +286,112 @@
   text-indent: 2em;
   margin-bottom: 0.6em;
   overflow-wrap: break-word;
+  word-break: normal;
 }
 
-.chapter-content .empty-chapter {
+/* ---- 设置面板 ---- */
+.float-settings {
+  position: fixed;
+  right: 16px;
+  bottom: 72px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--rv-bar-bg);
+  color: var(--rv-bar-fg);
+  font-size: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  z-index: 20;
+}
+
+.panel-root[hidden] { display: none; }
+
+.panel-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 30;
+}
+
+.settings-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  background: var(--panel-bg, #ffffff);
+  color: var(--panel-fg, #333333);
+  border-radius: 14px 14px 0 0;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 31;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px 8px;
+}
+
+.panel-header h3 { font-size: 16px; font-weight: 500; }
+
+.panel-header .btn-ghost {
+  color: inherit;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.panel-body { padding: 6px 18px 20px; }
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.setting-row:last-child { border-bottom: none; }
+
+.setting-label { font-size: 14px; }
+
+.setting-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.setting-controls button {
+  min-width: 40px;
+  padding: 7px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.setting-controls button:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.setting-controls button.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+.setting-controls button:disabled { opacity: 0.35; cursor: default; }
+
+.setting-value {
+  min-width: 48px;
   text-align: center;
-  color: var(--color-muted);
-  text-indent: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .ch-select {

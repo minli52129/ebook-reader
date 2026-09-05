@@ -50,8 +50,11 @@ async function main(): Promise<void> {
   let readerView: ReaderView | null = null;
 
   const render = async (route: Route): Promise<void> => {
-    // 离开阅读视图时由 ReaderView 自行保存进度
-    readerView = null;
+    // 离开阅读视图：落盘进度、解绑全局监听
+    if (readerView !== null) {
+      readerView.destroy();
+      readerView = null;
+    }
 
     if (appStore.get().fatal !== null) {
       renderFatal(appStore.get().fatal ?? '未知错误');

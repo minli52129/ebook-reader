@@ -119,10 +119,29 @@ ESLint 10 系列声明支持 `^20.19.0 || ^22.13.0 || >=24`，本机 Node v23.11
 |---|---|---|
 | M0 | 脚手架：Vite + TS + ESLint + Vitest + CI | ✅ 完成 |
 | M1 | TXT 端到端：编码探测 + 章节识别 + IndexedDB + 书架 | ✅ 完成 |
-| M2 | 排版引擎：懒分页 + 缓存 + 锚点 + 翻页/主题/设置 | ⬜ |
+| M2 | 排版引擎：懒分页 + 缓存 + 锚点 + 翻页/主题/设置 | ✅ 完成 |
 | M3 | EPUB：解包 + OPF + nav + 净化 + 资源 | ⬜ |
 | M4 | 体验：搜索 + 书签/高亮/笔记 + 滚动模式 | ⬜ |
 | M5 | PWA 离线 + GitHub Pages 部署 | ⬜ |
+
+### M2 已交付
+
+- **分页纯算法**（`core/pagination/paginator.ts`）：测量经 `IMeasurer` 注入，
+  零 DOM 依赖可完整单测；页记录 `[startOffset, endOffset)` 相对章节规范文本
+  （`title + '\n' + content`）的偏移，无缝覆盖全文
+- **DOM 测量器**（`platform/measurer/dom-measurer.ts`）：项目里唯一读写
+  `offsetHeight` 的地方，二分查找每页容量；与渲染容器样式严格同步
+- **LRU 分页缓存**：键 = 书 + 章 + 排版参数，字号/行距/视口变化天然不命中；
+  resize 只重算当前章（修复旧实现全量重跑）
+- **锚点精确恢复**：`ReadingAnchor {chapterIdx, offsetInChapter}` 取代旧的
+  "分页片段长度累加"，改字号后恢复到包含原位置的页，不跳读不漂移
+- **阅读器双模式**：分页（点击分区/按钮/键盘翻页 + 页码指示）与滚动并存；
+  设置面板（字号/行距/边距/字体/三主题）持久化到 IndexedDB
+- **验收测试**（`tests/perf/layout-engine.test.ts`）：5k 字单章分页 <100ms
+  （实际 ~0.4ms）、字号变化位置不漂移、缓存命中零重算、LRU 淘汰语义
+
+已知边界（M3 处理）：仅支持 TXT；EPUB 章节为 HTML 时按纯文本渲染；
+页首行为段落中间时无首行缩进（分页切片的已知折衷）。
 
 ### M1 已交付
 
