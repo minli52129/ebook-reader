@@ -20,7 +20,7 @@ export interface OneDriveOAuthConfig {
 }
 
 export const onedriveConfig: OneDriveOAuthConfig = {
-  client_id: '', // TODO: 填入 Azure AD 应用的客户端 ID
+  client_id: '3a62535f-83c5-4346-a461-83a226c5db2b',
   redirect_uri: typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '',
   scopes: ['Files.Read', 'User.Read', 'offline_access'],
 };
