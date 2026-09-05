@@ -24,6 +24,8 @@ export interface BookMeta {
   chapterCount: number;
   addedAt: number;
   lastReadAt: number;
+  /** EPUB 嵌套目录（TXT 为 undefined，书架/阅读层用章节标题当单级目录） */
+  toc?: TocEntry[];
 }
 
 /** 单个章节 */

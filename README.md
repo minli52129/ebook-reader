@@ -120,9 +120,29 @@ ESLint 10 系列声明支持 `^20.19.0 || ^22.13.0 || >=24`，本机 Node v23.11
 | M0 | 脚手架：Vite + TS + ESLint + Vitest + CI | ✅ 完成 |
 | M1 | TXT 端到端：编码探测 + 章节识别 + IndexedDB + 书架 | ✅ 完成 |
 | M2 | 排版引擎：懒分页 + 缓存 + 锚点 + 翻页/主题/设置 | ✅ 完成 |
-| M3 | EPUB：解包 + OPF + nav + 净化 + 资源 | ⬜ |
+| M3 | EPUB：解包 + OPF + nav + 净化 + 资源 | ✅ 完成 |
 | M4 | 体验：搜索 + 书签/高亮/笔记 + 滚动模式 | ⬜ |
 | M5 | PWA 离线 + GitHub Pages 部署 | ⬜ |
+
+### M3 已交付
+
+- **解析管线**（`core/epub/`）：container.xml → OPF（**spine 顺序 = 真实阅读顺序**，
+  与 manifest 顺序无关）→ EPUB3 nav.xhtml / EPUB2 NCX 嵌套目录
+- **路径解析**：处理 `../` 上跳、百分号编码、章节内锚点；zip 路径规范
+- **章节净化**（`platform/import/import-epub.ts`）：
+  - **纵深防御**：显式 DOM 遍历移除 `<script>`/事件属性/`javascript:` 协议，
+    不依赖 DOMPurify 可用性（测试暴露 happy-dom 下净化器会原样返回输入）
+  - DOMPurify 作为浏览器端第二道防线
+  - 图片内联为 data URL（自包含、可存 IndexedDB，无需 Blob 生命周期管理）
+- **阅读器**：滚动模式完整渲染净化后的 HTML（含内联图片）；
+  分页模式以提取的纯文本为基准（已知折衷：分页模式下内联图片不可见）
+- **书架**：接受 `.epub`、显示封面、按扩展名分发到 TXT/EPUB 导入管线
+- **验收测试**（`src/core/epub/` + `src/platform/import/`）：
+  JSZip 程序化构造最小合法 EPUB（避免 git 塞二进制），覆盖 spine 顺序、
+  标题提取、图片内联、脚本剥离、nav/NCX 双路径、封面、损坏文件报错
+
+已知边界（M4 处理）：无全文搜索、无书签/高亮/笔记；
+EPUB 字体文件未加载（仅内联图片）；DRM 加密 EPUB 明确不支持。
 
 ### M2 已交付
 

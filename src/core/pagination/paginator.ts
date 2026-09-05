@@ -30,6 +30,12 @@ export interface PaginateChapterOptions {
   maxHeight: number;
   /** 排版缓存键，写入结果供缓存校验 */
   layoutKey: string;
+  /**
+   * 规范文本覆写：EPUB 章节内容为 HTML，无法按标签切片，
+   * 视图层传入提取后的纯文本作为分页与锚点基准（必须与渲染口径一致）。
+   * 缺省用 title + '\n' + content。
+   */
+  text?: string;
 }
 
 /**
@@ -37,8 +43,8 @@ export interface PaginateChapterOptions {
  * 保证至少返回一页（空章也有标题页）。
  */
 export function paginateChapter(options: PaginateChapterOptions): Page[] {
-  const { chapter, chapterIdx, measurer, maxHeight, layoutKey } = options;
-  const fullText = chapterCanonicalText(chapter);
+  const { chapter, chapterIdx, measurer, maxHeight, layoutKey, text } = options;
+  const fullText = text ?? chapterCanonicalText(chapter);
   void layoutKey;
 
   const pages: Page[] = [];

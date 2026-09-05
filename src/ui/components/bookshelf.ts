@@ -4,6 +4,7 @@ import { appStore } from '@/store/app-store';
 import { navigate } from '@/ui/router';
 
 import { importTxtFile } from '@/platform/import/import-txt';
+import { importEpubFile } from '@/platform/import/import-epub';
 import type { EbookDb } from '@/platform/db/repository';
 
 function formatSize(bytes: number): string {
@@ -40,8 +41,8 @@ export function renderBookshelf(
     <div class="view bookshelf-view">
       <header class="shelf-header">
         <h1>📖 我的书架</h1>
-        <button id="upload-btn" class="btn-primary">+ 添加 TXT 小说</button>
-        <input id="file-input" type="file" accept=".txt,.TXT" multiple hidden>
+        <button id="upload-btn" class="btn-primary">+ 添加 TXT / EPUB</button>
+        <input id="file-input" type="file" accept=".txt,.TXT,.epub,.EPUB" multiple hidden>
       </header>
       <div id="shelf-status" class="shelf-status" hidden></div>
       <div id="book-list" class="book-list"></div>
@@ -76,7 +77,11 @@ export function renderBookshelf(
       .map(
         (book: BookMeta) => `
       <article class="book-card" data-id="${book.id}">
-        <div class="book-cover" aria-hidden="true">📄</div>
+        ${
+          book.coverUrl !== undefined
+            ? `<img class="book-cover-img" src="${book.coverUrl}" alt="" loading="lazy">`
+            : '<div class="book-cover" aria-hidden="true">📄</div>'
+        }
         <div class="book-info">
           <h3 class="book-title">${escapeHtml(book.title)}</h3>
           <p class="book-meta">
@@ -103,7 +108,11 @@ export function renderBookshelf(
     let ok = 0;
     for (const file of files) {
       try {
-        await importTxtFile(file, db);
+        if (/\.epub$/i.test(file.name)) {
+          await importEpubFile(file, db);
+        } else {
+          await importTxtFile(file, db);
+        }
         ok += 1;
       } catch (error) {
         showStatus(`《${file.name}》导入失败：${(error as Error).message}`, true);

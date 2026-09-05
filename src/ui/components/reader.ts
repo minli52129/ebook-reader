@@ -24,6 +24,20 @@ function escapeHtml(text: string): string {
 }
 
 /**
+ * 章节规范文本：分页与锚点的统一基准。
+ * EPUB 章节为净化后的 HTML，无法按标签切片 —— 提取纯文本分页
+ * （已知折衷：分页模式下 EPUB 的内联图片不可见，滚动模式完整保留）。
+ */
+function chapterPlainText(chapter: Chapter): string {
+  if (chapter.contentType === 'text') {
+    return chapter.content;
+  }
+  const holder = document.createElement('div');
+  holder.innerHTML = chapter.content;
+  return (holder.textContent ?? '').replace(/\s+\n/g, '\n');
+}
+
+/**
  * 阅读视图（M2）：
  * - 分页模式：DomMeasurer 测量 + 按章懒分页 + LRU 缓存 + 锚点精确恢复
  * - 滚动模式：按章滚动（M1 行为）
@@ -154,6 +168,8 @@ export class ReaderView {
           this.contentHeight() - this.settings.margin * 2,
         ),
         layoutKey,
+        // EPUB 章节：以提取后的纯文本为分页/锚点基准
+        text: `${chapter.title}\n${chapterPlainText(chapter)}`,
       });
       this.cache.set(this.bookId, this.chapterIdx, layoutKey, this.pages);
     }
@@ -296,12 +312,17 @@ export class ReaderView {
     if (chapter !== undefined) {
       if (titleEl !== null) titleEl.textContent = chapter.title;
       if (contentEl instanceof HTMLElement) {
-        contentEl.innerHTML = chapter.content
-          .split('\n')
-          .map((line) => line.trim())
-          .filter((line) => line.length > 0)
-          .map((line) => `<p>${escapeHtml(line)}</p>`)
-          .join('');
+        if (chapter.contentType === 'html') {
+          // EPUB：内容已在导入时净化（DOMPurify + 显式剥离），可直接渲染
+          contentEl.innerHTML = chapter.content;
+        } else {
+          contentEl.innerHTML = chapter.content
+            .split('\n')
+            .map((line) => line.trim())
+            .filter((line) => line.length > 0)
+            .map((line) => `<p>${escapeHtml(line)}</p>`)
+            .join('');
+        }
       }
     }
     if (select !== null) {
