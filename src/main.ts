@@ -74,6 +74,21 @@ async function main(): Promise<void> {
   });
 
   await render(parseHash(location.hash));
+
+  // PWA：注册 Service Worker（仅生产环境，避免开发时缓存干扰）
+  registerServiceWorker();
+}
+
+/** 注册 Service Worker；开发环境跳过以便热更新 */
+export function registerServiceWorker(): void {
+  if (!('serviceWorker' in navigator)) return;
+  // 开发环境（localhost 且有 HMR）不注册，避免缓存旧资源
+  if (import.meta.env.DEV) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch((error) => {
+      console.warn('Service Worker 注册失败', error);
+    });
+  });
 }
 
 void main();
