@@ -1,6 +1,7 @@
 export type Route =
   | { name: 'bookshelf' }
-  | { name: 'reader'; bookId: string };
+  | { name: 'reader'; bookId: string }
+  | { name: 'music' };
 
 /** 解析 location.hash；未识别的 hash 回退到书架 */
 export function parseHash(hash: string): Route {
@@ -8,6 +9,9 @@ export function parseHash(hash: string): Route {
   const readerMatch = /^read\/([A-Za-z0-9-]+)$/.exec(normalized);
   if (readerMatch !== null) {
     return { name: 'reader', bookId: readerMatch[1] };
+  }
+  if (normalized === 'music') {
+    return { name: 'music' };
   }
   return { name: 'bookshelf' };
 }
