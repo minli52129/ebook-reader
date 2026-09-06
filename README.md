@@ -136,35 +136,6 @@ ESLint 10 系列声明支持 `^20.19.0 || ^22.13.0 || >=24`，本机 Node v23.11
 已知边界（M5 处理）：无 PWA/离线；无高亮文本选区笔记（仅整点书签）；
 搜索未用 Worker（纯函数已预留接口，大书可平滑迁移）。
 
-## 音乐播放器（OneDrive 音源）
-
-书架首页 →「🎵 音乐播放器」进入。音频文件来自你的 OneDrive 网盘，
-通过 Microsoft Graph API 读取并流式播放。
-
-### 首次使用需要 OneDrive 授权
-
-由于 `client_id` 属于你的 Azure AD 应用注册信息，需要你自行配置：
-
-1. 访问 [Azure 门户](https://portal.azure.com) → **Azure Active Directory** → **应用注册** → 新注册
-2. 名称任意；**受支持的账户类型**：任何组织目录和个人 Microsoft 账户
-3. **平台**：单页应用程序 (SPA)；**重定向 URI** 填部署地址（如
-   `https://minli52129.github.io/ebook-reader/`）
-4. 注册完成后复制 **应用程序(客户端) ID**
-5. 打开 `src/music/onedrive-config.ts`，把 `client_id` 填入 `onedriveConfig.client_id`
-6. **API 权限** → 添加 Microsoft Graph → 委托权限：
-   `Files.Read`、`User.Read`、`offline_access`（无需管理员同意）
-7. 刷新页面即可：首次进入会跳转微软登录授权
-
-> 说明：`client_id` 是公开信息（SPA 无法保密），安全性由 **PKCE**（证明密钥交换）
-> 流程保证；授权后仅存储 access/refresh token 在本机浏览器，不接触你的文件内容。
-
-### 功能
-- 一键扫描 OneDrive 全部音频（递归子文件夹）
-- 文件夹浏览 + 面包屑导航
-- 播放/暂停、上/下一首、进度拖动、音量、静音
-- 播放列表 + 正在播放展示
-- 支持 mp3 / m4a / aac / ogg / wav / flac / opus / wma
-
 ### M3 已交付
 
 - **解析管线**（`core/epub/`）：container.xml → OPF（**spine 顺序 = 真实阅读顺序**，

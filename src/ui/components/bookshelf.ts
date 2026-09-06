@@ -41,10 +41,7 @@ export function renderBookshelf(
     <div class="view bookshelf-view">
       <header class="shelf-header">
         <h1>📖 我的书架</h1>
-        <div class="shelf-header-actions">
-          <a class="btn-ghost" href="#/music">🎵 音乐播放器</a>
-          <button id="upload-btn" class="btn-primary">+ 添加 TXT / EPUB</button>
-        </div>
+        <button id="upload-btn" class="btn-primary">+ 添加 TXT / EPUB</button>
         <input id="file-input" type="file" accept=".txt,.TXT,.epub,.EPUB" multiple hidden>
       </header>
       <div id="shelf-status" class="shelf-status" hidden></div>

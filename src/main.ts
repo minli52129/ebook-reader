@@ -5,7 +5,6 @@ import { EbookDb } from '@/platform/db/repository';
 import { appStore } from '@/store/app-store';
 import { renderBookshelf, refreshBooks } from '@/ui/components/bookshelf';
 import { ReaderView } from '@/ui/components/reader';
-import { MusicPlayerView } from '@/music/music-player';
 import { onRouteChange, parseHash, type Route } from '@/ui/router';
 
 const found = document.querySelector<HTMLDivElement>('#app');
@@ -49,18 +48,12 @@ async function main(): Promise<void> {
   }
 
   let readerView: ReaderView | null = null;
-  let musicView: MusicPlayerView | null = null;
 
   const render = async (route: Route): Promise<void> => {
     // 离开阅读视图：落盘进度、解绑全局监听
     if (readerView !== null) {
       readerView.destroy();
       readerView = null;
-    }
-    // 音乐播放器：停止播放
-    if (musicView !== null) {
-      musicView.destroy();
-      musicView = null;
     }
 
     if (appStore.get().fatal !== null) {
@@ -71,9 +64,6 @@ async function main(): Promise<void> {
     if (route.name === 'reader') {
       readerView = new ReaderView(app, db, route.bookId);
       await readerView.open();
-    } else if (route.name === 'music') {
-      musicView = new MusicPlayerView(app);
-      await musicView.open();
     } else {
       renderBookshelf(app, db);
     }
